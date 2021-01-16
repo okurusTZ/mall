@@ -31,6 +31,7 @@ export default {
   /* 参数：X轴上的偏移，Y轴上的偏移，阴影的扩散程度和颜色 */
   /* 因为需要Y轴向上的偏移，所以X设为0，Y设为-3 */
   box-shadow: 0px -1px 1px rgba(100,100,100,0.2);
+  z-index: 10;
 }
 
 </style>
