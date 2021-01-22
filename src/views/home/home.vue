@@ -1,13 +1,21 @@
 <template>
   <div id="home">
     <nav-bar class="home-nav"><div slot="middle">购物街</div></nav-bar>
-    <home-swiper :banners="banners"></home-swiper>
-    <recommend-view :recommends="recommends"></recommend-view>
-    <feature-view></feature-view>
-    <tab-control class="tab-control" 
-    :titles="['流行', '新款', '精选']"
-    @tabClick="tabClick"></tab-control>
-    <products-list :products="showProducts"></products-list>
+    <scroll class="content"  ref="scroll" 
+    :probe-type="3" 
+    @contentScroll="contentScoll"
+    :pull-up-load="true"
+    @pullingUp="loadMore">
+      <home-swiper :banners="banners"></home-swiper>
+      <recommend-view :recommends="recommends"></recommend-view>
+      <feature-view></feature-view>
+      <tab-control class="tab-control" 
+      :titles="['流行', '新款', '精选']"
+      @tabClick="tabClick"></tab-control>
+      <products-list :products="showProducts"></products-list>
+    </scroll>
+    <!-- 组件不能之间监听点击，必须加上native -->
+    <back-top @click.native="backTopClick" v-show="isShowBackTop"></back-top>
   </div>
 </template>
 
@@ -20,6 +28,8 @@
   import NavBar from '../../components/common/navbar/NavBar'
   import TabControl from '../../components/content/tabControl/tabControl'
   import ProductsList from '../../components/content/products/ProductsList'
+  import Scroll from '../../components/common/scroll/scroll'
+  import BackTop from '../../components/content/backTop/backTop'
   // 函数
   import { getHomeMultidata, getHomeProducts } from '../../network/home'
 
@@ -31,7 +41,9 @@
       RecommendView,
       FeatureView,
       TabControl,
-      ProductsList
+      ProductsList,
+      Scroll,
+      BackTop
     },
     data() {
       return {
@@ -51,7 +63,8 @@
             list: []
           }
         },
-        currentType: 'pop'
+        currentType: 'pop',
+        isShowBackTop: false
       }
     },
     computed: {
@@ -107,6 +120,23 @@
           this.products[type].list.push(...res.data.list);
           this.products[type].page += 1;
         })
+      },
+      backTopClick() {
+        console.log('backtop');
+        this.$refs.scroll.scrollTo(0,0,500)
+      },
+      contentScoll(position) {
+        this.isShowBackTop = -position.y > 1000 
+      },
+      loadMore() {
+        // console.log('loadmore')
+        // 会产生无法上拉的情况，因为最外层有个固定的高度，内部内容的高度进行了改变后
+        // 可滚动的区域长度没有及时刷新，所以会无法上拉
+        // 因为图片是异步更新，所以在计算高度的时候，没有算入图片的高度
+        this.getHomeProducts(this.currentType)
+        this.$refs.scroll.finishPullUp()
+        // 刷新高度
+        this.$refs.scroll.scroll.refresh()
       }
     }
   }
@@ -116,7 +146,9 @@
   #home {
     /* height: 100%;
     position: relative; */
-    margin-top: 44px;
+    position: relative;
+    /* 视口高度 viewpoint height */
+    height: 100vh;
   }
   .home-nav {
     background-color: var(--color-tint);
@@ -137,5 +169,19 @@
     position: sticky;
     top: 44px;
     background-color: #fff;
+  }
+
+  /* .content {
+    height: calc(100% - 93px);
+    overflow: hidden;
+  } */
+
+  .content {
+    overflow: hidden;
+    position: absolute;
+    top: 44px;
+    bottom: 49px;
+    left: 0;
+    right: 0;
   }
 </style>
