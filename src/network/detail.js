@@ -14,6 +14,7 @@ export class Product {
   // 传入需要请求的数据名称
   constructor(itemInfo, columns, shopInfo) {
     this.title = itemInfo.title;
+    this.desc = itemInfo.desc;
     this.price = itemInfo.price;
     this.oldPrice = itemInfo.oldPrice;
 		this.lowNowPrice = itemInfo.lowNowPrice;

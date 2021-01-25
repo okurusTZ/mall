@@ -1,15 +1,21 @@
 <template>
   <div id="detail">
-    <detail-nav-bar></detail-nav-bar>
-    <scroll class="content" ref="scroll">
-      <detail-swiper :banners="banners"></detail-swiper>
+    <detail-nav-bar @titleClick="titleClick" ref="detailNav"></detail-nav-bar>
+    <!-- <p v-for="(item, idx) in this.$store.state.cartList" :key="idx">
+      {{item}}
+      </p> -->
+    <scroll class="content" ref="scroll" 
+    @contentScroll="contentScroll" :probe-type="3">
+      <detail-swiper :banners="banners" ></detail-swiper>
       <detail-base-info :product="product"></detail-base-info>
       <detail-shop-info :shop="shop"></detail-shop-info>
-      <detail-product-info :detailInfo="detailInfo"></detail-product-info>
-      <detail-param-info :paramInfo="paramInfo"></detail-param-info>
-      <detail-comment-info :commentInfo="commentInfo"></detail-comment-info>
-      <products-list :products="recommend"></products-list>
+      <detail-product-info :detail-info="detailInfo" @imgLoad="imgLoad"></detail-product-info>
+      <detail-param-info :param-info="paramInfo" ref="param"></detail-param-info>
+      <detail-comment-info :comment-info="commentInfo" ref="comment"></detail-comment-info>
+      <products-list :products="recommend" ref="recommend"></products-list>
     </scroll>
+    <back-top @click.native="backTopClick" v-show="isShowBackTop"></back-top>
+    <detail-bottom-bar @addToCart="addToCart"></detail-bottom-bar>
   </div>
 </template>
 
@@ -23,12 +29,15 @@
   import detailParamInfo from './ChildComps/detailParamInfo'
   import detailCommentInfo from './ChildComps//detailCommentInfo'
   import productsList from '../../components/content/products/ProductsList'
-  import { itemImageListenerMixin } from '../../common/mixin'
+  import detailBottomBar from './ChildComps/detailBottomBar'
+
+  import { itemImageListenerMixin, backTopMixin } from '../../common/mixin'
 
   import Scroll from '../../components/common/scroll/scroll'
   // 导入方法
   import { getDetail, getRecommend, Product, ProductParams, Shop} from '../../network/detail'
   import { debounce } from '../../common/utils'
+  // import { debounce } from '../../common/utils'
   export default {
     name: 'Detail',
     components: {
@@ -40,6 +49,7 @@
       detailParamInfo,
       detailCommentInfo,
       productsList,
+      detailBottomBar,
       Scroll
     },
     data() {
@@ -54,9 +64,13 @@
         commentInfo: {},
         recommend: [],
         // itemImgListener: null
+        newRefresh: null,
+        offsetYs: [],
+        getTopYs: null,
+        currentIndex: 0
       }
     },
-    mixins: [itemImageListenerMixin],
+    mixins: [itemImageListenerMixin, backTopMixin],
     created() {
       // 这的params是由index里的:iid获取的，所以属性名要相同
       // 1. 保存传入的iid
@@ -79,12 +93,46 @@
         if(data.rate.cRate !== 0) {
           this.commentInfo = data.rate.list[0]
         }
+
+        // 1. 第一次获取，在create里无法获取元素
+        // this.offsetYs = []
+        // this.offsetYs.push(0)
+        // 在created里获取不到$refs...，还没有渲染
+				// this.offsetYs.push(this.$refs.param.$el.offsetTop);
+				// this.offsetYs.push(this.$refs.comment.$el.offsetTop);
+				// this.offsetYs.push(this.$refs.recommend.$el.offsetTop);
+        // this.offsetYs.push(Number.MAX_VALUE);
+        
+        // 2. 第二次获取，根据图片加载的程度，还是不对
+        // 图片没有计算在内
+        // 根据最新的数据，DOM已经被渲染出来，但是图片依然没有加载完
+        // offsetTop值不对的时候，都是因为图片的问题
+        // this.$nextTick(() => {
+        //   this.offsetYs = []
+        //   this.offsetYs.push(0)
+        //   this.offsetYs.push(this.$refs.param.$el.offsetTop);
+        //   this.offsetYs.push(this.$refs.comment.$el.offsetTop);
+        //   this.offsetYs.push(this.$refs.recommend.$el.offsetTop);
+        //   this.offsetYs.push(Number.MAX_VALUE);
+        // })
       }) 
 
       getRecommend().then(res => {
         // const data = res.result
         this.recommend = res.data.list
       })
+
+      this.getTopYs = debounce(() => {
+        this.offsetYs = []
+        this.offsetYs.push(0)
+        // -44是为了处理navbar的遮盖
+				this.offsetYs.push(this.$refs.param.$el.offsetTop - 44);
+				this.offsetYs.push(this.$refs.comment.$el.offsetTop - 44);
+				this.offsetYs.push(this.$refs.recommend.$el.offsetTop - 44);
+        this.offsetYs.push(Number.MAX_VALUE);
+        // console.log(this.offsetYs)
+      }, 100)
+
     },
     mounted() {
     },
@@ -105,7 +153,62 @@
         this.$refs.scroll.scroll.refresh()
       },
       imgLoad() {
-        this.$refs.scroll.scroll.refresh()
+        // this.$refs.scroll.scroll.refresh()
+        this.newRefresh()
+        // console.log('?')
+        // 为了处理图片没有加载出来时造成的值不对的问题
+        // 防抖，防止多次调用
+        this.getTopYs()
+        // console.log(this.offsetYs)
+      },
+      titleClick(index) {
+        // console.log(index)
+        // var height = 0;
+        // switch(index) {
+        //   case 0:
+        //     height = 0;
+        //     break
+        //   case 1:
+        //     height = this.$refs.param.$el.offsetTop
+        //     break
+        //   case 2:
+        //     height = this.$refs.comment.$el.offsetTop
+        //     break
+        //   case 3:
+        //     height = this.$refs.recommend.$el.offsetTop
+        //     break
+        // }
+        // console.log(height)
+        this.$refs.scroll.scrollTo(0, -this.offsetYs[index], 500)
+      },
+      contentScroll(position) {
+        // console.log(position)
+        // 1. 获取y值
+        const positionY = -position.y
+        // 2. 与数组里的值进行对比
+        for(let i in this.offsetYs) {
+          // i的类型是string，所以i+1获得的值不对
+          i = i * 1
+          // parseInt(i)
+          if (this.currentIndex !== i && (( i < this.offsetYs.length - 1  &&  positionY >= this.offsetYs[i] && positionY < this.offsetYs[i+1] ) 
+          || ( i === this.offsetYs.length && positionY >= this.offsetYs[i]))) {
+            this.currentIndex = i
+            this.$refs.detailNav.currentIndex = i
+          }
+        }
+        this.listenShowBackTop(position)
+      },
+      addToCart() {
+        const cProduct = {}
+        cProduct.image = this.banners[0]
+        cProduct.title = this.product.title
+        cProduct.desc = this.product.desc
+        cProduct.price = this.product.lowNowPrice
+        // 这是最重要的，在购买过程中用于确定商品
+        cProduct.iid = this.iid
+
+        // console.log(cProduct)
+        this.$store.dispatch('addCart', cProduct)
       }
     }
   }
@@ -124,7 +227,7 @@
 
   .content {
     /* 注意这里如果要计算高度，因为100%相对于父组件，所以要设置父组件高度 */
-    height: calc(100% - 44px);
+    height: calc(100% - 44px - 49px);
     /* 防止遮盖吸顶的组件 */
     overflow: hidden;
   }

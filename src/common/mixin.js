@@ -9,14 +9,44 @@ import { debounce } from './utils'
 export const itemImageListenerMixin = {
   data() {
     return {
-      itemImgListener: null
+      itemImgListener: null,
+      newRefresh: null
     }
   },
   mounted() {
-    let refresh = debounce(this.$refs.scroll.refresh(), 100)
+    // console.log(this.$refs.scroll.refresh)
+    // 存在的问题，在mounted里debounce获取不到this.$refs
+    // 注意这里传值，不能传refresh(), 假如传refresh(),穿进去的是
+    // return的部分，应该传的是函数本身refresh
+    this.newRefresh = debounce(this.$refs.scroll.refresh, 100)
     this.itemImgListener = () => {
-      refresh()
+      // console.log('图片加载')
+      this.newRefresh()
     }
     this.$bus.$on('itemImgLoad', this.itemImgListener)   
+  },
+  updated() {
+    // console.log(this.$refs.scroll)
+  }
+}
+
+// 对于返回顶部的图标的抽离
+import BackTop from '../components/content/backTop/backTop'
+export const backTopMixin = {
+  components: {
+    BackTop
+  },
+  data() {
+    return {
+      isShowBackTop: false
+    }
+  },
+  methods: {
+    backTopClick() {
+      this.$refs.scroll.scrollTo(0,0,500)
+    },
+    listenShowBackTop(position) {
+      this.isShowBackTop = (-position.y) > 1000 
+    }
   }
 }

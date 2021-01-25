@@ -30,6 +30,7 @@
       },
       itemClick(index) {
         this.currentIndex = index
+        this.$emit('titleClick', index)
       }
     }
   }

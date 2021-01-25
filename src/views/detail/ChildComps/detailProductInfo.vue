@@ -35,15 +35,16 @@
     },
     methods: {
       imgLoad() {
-        if(++this.counter === this.imagesLength) {
+        //if(++this.counter === this.imagesLength) {
           this.$emit('imgLoad')
-        }
+        //}
       }
     },
     watch: {
       detailInfo() {
         // 直接用对象.属性的方法拿到属性
         this.imagesLength = this.detailInfo.detailImage[0].list.length
+        // console.log('图片refresh')
       }
     }
   }

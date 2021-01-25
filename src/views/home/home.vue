@@ -188,7 +188,7 @@
         })
       },
       backTopClick() {
-        console.log('backtop');
+        // console.log('backtop');
         this.$refs.scroll.scrollTo(0,0,500)
       },
       contentScoll(position) {
