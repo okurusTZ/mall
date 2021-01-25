@@ -44,15 +44,28 @@
       this.scroll.on('pullingUp', () => {
         this.$emit('pullingUp')
       })
+
+      // 4. 等图片加载完后，更新一下滚动的高度
+      // 根据scrollerHeight属性来决定
+      // scrollerHeight由放在BScroll的content中的子组件的高度决定的
+      // 但最开始记载时，没有将图片计算在内
+
+      // 监听每一张图片是否加载完成，只要有一张图片加载完成，就执行一次
+      this.scroll.refresh()
     },
     methods: {
       scrollTo(x, y, time=300) {
-        this.scroll.scrollTo(x, y, time)
+        // 先判断是否为null，如果不为null，再执行，防止没有加载出来
+        this.scroll && this.scroll.scrollTo && this.scroll.scrollTo(x, y, time)
       },
       finishPullUp() {
         setTimeout(() => {
           this.scroll.finishPullUp()
         }, 500);
+      },
+      refresh() {
+        console.log('refresh')
+        this.scroll && this.scroll.refresh();
       }
     }
   }
