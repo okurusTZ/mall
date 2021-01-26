@@ -1,6 +1,6 @@
 <template>
   <div class="cart-list">
-    <scroll class="content"> 
+    <scroll class="content" ref="scroll"> 
       <cart-list-item 
       class="cart-item" 
       v-for="(item,idx) in cartList" 
@@ -23,6 +23,9 @@
     },
     computed: {
       ...mapGetters(['cartList'])
+    },
+    activated() {
+      this.$refs.scroll.scroll.refresh()
     }
   }
 </script>

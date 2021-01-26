@@ -16,6 +16,7 @@
     </scroll>
     <back-top @click.native="backTopClick" v-show="isShowBackTop"></back-top>
     <detail-bottom-bar @addToCart="addToCart"></detail-bottom-bar>
+    <toast message="hahha"></toast>
   </div>
 </template>
 
@@ -30,6 +31,7 @@
   import detailCommentInfo from './ChildComps//detailCommentInfo'
   import productsList from '../../components/content/products/ProductsList'
   import detailBottomBar from './ChildComps/detailBottomBar'
+  import toast from '../../components/common/toast/Toast'
 
   import { itemImageListenerMixin, backTopMixin } from '../../common/mixin'
 
@@ -50,6 +52,7 @@
       detailCommentInfo,
       productsList,
       detailBottomBar,
+      toast,
       Scroll
     },
     data() {
@@ -199,6 +202,7 @@
         this.listenShowBackTop(position)
       },
       addToCart() {
+        // 获取购物车需要展示的信息
         const cProduct = {}
         cProduct.image = this.banners[0]
         cProduct.title = this.product.title
@@ -208,7 +212,13 @@
         cProduct.iid = this.iid
 
         // console.log(cProduct)
-        this.$store.dispatch('addCart', cProduct)
+        // 将商品添加到购物车
+        // 和mapGetters一样，可以通过mapActions来映射
+        // actions可以返回一个promise，用于查看异步事件是否完成
+        this.$store.dispatch('addCart', cProduct).then(res => {
+          // console.log(res)
+          this.$toast.show(res, 1000)
+        })
       }
     }
   }
